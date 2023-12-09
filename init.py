@@ -4,6 +4,7 @@ import os
 
 TEMPLATE = """
 import os
+import sys
 
 def main(lines):
   s = 0
@@ -19,7 +20,7 @@ def main2(lines):
 
 def readlines(filename):
   with open(filename) as f:
-    lines = [line[:-1] for line in f.readlines()]
+    lines = [line.strip() for line in f.readlines()]
   return lines
 
 example_filename = "day{DAY}.test"
