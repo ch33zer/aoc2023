@@ -51,23 +51,19 @@ def main(lines):
   return s
 
 def find(pattern, string):
-  cache = {}
-  def add_to_cache(key, val):
-    cache[key] = val
-    return val
 
+  @functools.cache
   def scan(pattern_pos, string_pos):
     initial_pattern_pos = pattern_pos
     initial_string_pos = string_pos
-    if (pattern_pos, string_pos) in cache:
-      return cache[(pattern_pos, string_pos)]
     if pattern_pos == len(pattern) and string_pos == len(string):
-      return add_to_cache((pattern_pos, string_pos), 1)
+      return 1
     if pattern_pos == len(pattern):
-      return add_to_cache((pattern_pos, string_pos), 0)
+      return 0
     # Open bracket
     pattern_pos += 1
     valid_c = set()
+    # valid chars
     while (p := pattern[pattern_pos]) != "]":
       valid_c.add(p)
       pattern_pos += 1
@@ -108,7 +104,7 @@ def find(pattern, string):
           break
       if taken == num:
         tot += scan(pattern_pos, string_pos + num)
-    return add_to_cache((initial_pattern_pos, initial_string_pos), tot)
+    return tot
 
   return scan(0, 0)
 
