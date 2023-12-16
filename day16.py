@@ -1,8 +1,8 @@
 
 import os
-import sys
 import collections
 import math
+
 Point = collections.namedtuple("Point", ["x", "y"])
 
 Beam = collections.namedtuple("Beam", ["point", "direction"])
@@ -36,21 +36,18 @@ NEXT = {
 }
 
 def in_bounds(grid, loc):
-  return loc.x >= 0 and loc.x < len(grid[0]) and loc.y > 0 and loc.y < len(grid):
+  return loc.x >= 0 and loc.x < len(grid[0]) and loc.y >= 0 and loc.y < len(grid)
 
 def next_beams(grid, beam):
-  current_direction = beam.direction
-  next_point = Point(beam.point.x + current_direction.x, beam.point.y + current_direction.y)
+  next_point = Point(beam.point.x + beam.direction.x, beam.point.y + beam.direction.y)
   if not in_bounds(grid, next_point):
     return []
-  to_process = grid[next_point.y][next_point.x]
-  new_dirs = NEXT[(current_direction, to_process)]
+  new_dirs = NEXT[(beam.direction, grid[next_point.y][next_point.x])]
   return [Beam(next_point, new_dir) for new_dir in new_dirs]
 
 def sim(grid, start_beam):
   frontier = [start_beam]
   seen = set()
-  seen_locs = set()
   while frontier:
     new_frontier = []
     for beam in frontier:
@@ -59,9 +56,8 @@ def sim(grid, start_beam):
         if new_beam not in seen:
           new_frontier.append(new_beam)
           seen.add(new_beam)
-          seen_locs.add(new_beam.point)
     frontier = new_frontier
-  return len(seen_locs)
+  return len({beam.point for beam in seen})
 
 def main(lines):
   grid = []
@@ -91,7 +87,7 @@ example_filename = "day16.test"
 ex = readlines(example_filename)
 print("Ex pt1", main(ex))
 print("Ex pt2", main2(ex))
-#sys.exit(0)
+
 main_filename = "day16.input"
 m = readlines(main_filename)
 print("Main pt1", main(m))
