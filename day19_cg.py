@@ -3,49 +3,22 @@ import os
 import sys
 import collections
 import operator
-class Part:
-  def __init__(self):
-    self.x = None
-    self.m = None
-    self.a = None
-    self.s = None
-  def val(self):
-    return self.x + self.m + self.a + self.s
-  def __repr__(self):
-    return f"{{{self.x=} {self.m=} {self.a=} {self.s=}}}"
-
-class PnRange:
-  def __init__(self, x=(1, 4000), m=(1, 4000), a=(1, 4000), s=(1, 4000)):
-    self.x = x
-    self.m = m
-    self.a = a
-    self.s = s
-  def split(self, field, val):
-    lower_bound, upper_bound = getattr(self, field)
-    if lower_bound == upper_bound or val <= lower_bound or val > upper_bound:
-      return [self]
-    lower = PnRange(self.x, self.m, self.a, self.s)
-    upper = PnRange(self.x, self.m, self.a, self.s)
-    setattr(lower, field, (lower_bound, val-1))
-    setattr(upper, field, (val, upper_bound))
-    return [lower, upper]
-  def size(self):
-    acc = 1
-    for field in [self.x, self.m, self.a, self.s]:
-      acc *= field[1] - field[0] + 1
-    return acc
-  def __repr__(self):
-    return f"{{{self.x=} {self.m=} {self.a=} {self.s=}}}"
+REG_MAPPING={
+  "x": "X0",
+  "m": "X1",
+  "a": "X2",
+  "s": "X3" 
+}
 
 class Goto:
   def __init__(self, dest):
     self.dest = dest
-  def eval(self, _):
-    return self.dest
   def __repr__(self):
     return f"->{self.dest}"
-  def eval_range(self, rng):
-    return [(rng, self.dest)]
+  def asm(self):
+    return f"""
+  b {self.dest}0
+    """
 
 class Rule:
   def __init__(self, field, op_str, op, val, dest):
@@ -54,22 +27,14 @@ class Rule:
     self.op = op
     self.val = val
     self.dest = dest
-  def eval(self, part):
-    if self.op(getattr(part, self.field), self.val):
-      return self.dest
-    return None
-  def eval_range(self, rng):
-    new_rngs = rng.split(self.field, self.val+1 if self.op_str == ">" else (self.val))
-    ret = []
-    for rng in new_rngs:
-      target = self.dest if self.op(getattr(rng, self.field)[0], self.val) else None
-      ret.append((rng, target))
-    return ret
 
   def __repr__(self):
     return f"{self.field}{self.op_str}{self.val}->{self.dest}"
   def asm(self):
-    pass
+    return f"""
+  cmp {REG_MAPPING[self.field]}, #{self.val}
+  {"bgt" if self.op_str == ">" else "blt"} {self.dest}0
+    """
 
 def asmgen(lines):
   rules = collections.defaultdict(list)
@@ -101,12 +66,63 @@ def asmgen(lines):
   # S: X3
   # accepted_cnt: X4
   out.append("""
-    .global _start
-    .align 2
-    main:
-
+.text
+.global _start
+.align 4
+_start:
+  mov X0, #0 // will get incremented below
+  mov X1, #1
+  mov X2, #1
+  mov X3, #1
+  mov X4, #0
+next:
+  mov X6, #4001
+  // x
+  add X0, X0, #1
+  udiv X5, X0, X6
+  msub X0, X5, X6, X0
+  cmp X0, #0
+  bne in0
+  add X0, X0, #1
+  // m
+  add X1, X1, #1
+  udiv X5, X1, X6
+  msub X1, X5, X6, X1
+  cmp X1, #0
+  bne in0
+  add X1, X1, #1
+  // a
+  add X2, X2, #1
+  udiv X5, X2, X6
+  msub X2, X5, X6, X2
+  cmp X2, #0
+  bne in0
+  add X2, X2, #1
+  // s
+  add X3, X3, #1
+  udiv X5, X3, X6
+  msub X3, X5, X6, X3
+  cmp X3, #0
+  bne in0
+  add X3, X3, #1
+  b exit
+A0:
+  add X4, X4, #1
+  b next
+R0:
+  b next
+exit:
+  mov     X0, X4      // Use cnt as status code return code
+  mov     X16, #1     // Service command code 1 terminates this program
+  svc     0           // Call MacOS to terminate the program
   """)
-  for rule in rules:
+  for rulename, rulelist in rules.items():
+    for i, rule in enumerate(rulelist):
+      out.append(f"""
+{rulename}{i}:
+{rule.asm()}
+        """)
+  return out
 
 def readlines(filename):
   with open(filename) as f:
@@ -115,8 +131,13 @@ def readlines(filename):
 
 example_filename = "day19.test"
 ex = readlines(example_filename)
-print("Ex pt1", asmgen(ex))
+print("Ex pt1", "\n".join(asmgen(ex)))
+with open(example_filename + ".out", "w") as f:
+  f.write("\n".join(asmgen(ex)))
 #sys.exit(0)
 main_filename = "day19.input"
 m = readlines(main_filename)
-print("Main pt1", asmgen(m))
+print("Main pt1", "\n".join(asmgen(m)))
+with open(main_filename + ".out", "w") as f:
+  f.write("\n".join(asmgen(m)))
+

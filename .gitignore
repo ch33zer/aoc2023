@@ -1,3 +1,6 @@
 
 session
 day19
+*.out
+*.o
+*.runme
