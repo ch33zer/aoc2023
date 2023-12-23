@@ -4,3 +4,5 @@ day19
 *.out
 *.o
 *.runme
+*.gv
+*.pdf

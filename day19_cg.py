@@ -118,10 +118,10 @@ exit:
   """)
   for rulename, rulelist in rules.items():
     for i, rule in enumerate(rulelist):
-      out.append(f"""
-{rulename}{i}:
-{rule.asm()}
-        """)
+      out.append(f"{rulename}{i}:{rule.asm()}")
+  out.append(""".data
+  format: .ascii "x: %Ld m: %Ld a: %Ld s: %Ld acc: %Ld\n"
+""")
   return out
 
 def readlines(filename):

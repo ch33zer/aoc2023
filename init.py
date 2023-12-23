@@ -5,6 +5,7 @@ import os
 TEMPLATE = """
 import os
 import sys
+import math
 
 def main(lines):
   s = 0
