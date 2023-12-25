@@ -3,11 +3,12 @@ import os
 import sys
 import collections
 import operator
+
 REG_MAPPING={
-  "x": "X0",
-  "m": "X1",
-  "a": "X2",
-  "s": "X3" 
+  "x": "X19",
+  "m": "X20",
+  "a": "X21",
+  "s": "X22" 
 }
 
 class Goto:
@@ -60,67 +61,103 @@ def asmgen(lines):
       else:
         rules[name].append(Goto(step))
   out = []
-  # X: X0
-  # M: X1
-  # A: X2
-  # S: X3
-  # accepted_cnt: X4
+  # X: X19
+  # M: X20
+  # A: X21
+  # S: X22
+  # accepted_cnt: X23
   out.append("""
 .text
 .global _start
 .align 4
 _start:
-  mov X0, #0 // will get incremented below
-  mov X1, #1
-  mov X2, #1
-  mov X3, #1
-  mov X4, #0
+  stp FP, LR, [SP,#-16]!
+  mov FP, SP
+
+  mov X19, #0 // will get incremented below
+  mov X20, #1
+  mov X21, #1
+  mov X22, #1
+  mov X23, #0
 next:
-  mov X6, #4001
-  // x
-  add X0, X0, #1
-  udiv X5, X0, X6
-  msub X0, X5, X6, X0
-  cmp X0, #0
+  mov X24, #1001
+x:
+  add X19, X19, #1
+  udiv X5, X19, X24
+  msub X19, X5, X24, X19
+  cmp X19, #0
   bne in0
-  add X0, X0, #1
-  // m
-  add X1, X1, #1
-  udiv X5, X1, X6
-  msub X1, X5, X6, X1
-  cmp X1, #0
+  add X19, X19, #1
+m:
+  add X20, X20, #1
+  udiv X5, X20, X24
+  msub X20, X5, X24, X20
+  cmp X20, #0
   bne in0
-  add X1, X1, #1
-  // a
-  add X2, X2, #1
-  udiv X5, X2, X6
-  msub X2, X5, X6, X2
-  cmp X2, #0
+  add X20, X20, #1
+
+a:
+  add X21, X21, #1
+  udiv X5, X21, X24
+  msub X21, X5, X24, X21
+  cmp X21, #0
   bne in0
-  add X2, X2, #1
-  // s
-  add X3, X3, #1
-  udiv X5, X3, X6
-  msub X3, X5, X6, X3
-  cmp X3, #0
+  add X21, X21, #1
+
+  bl print_progress
+
+s:
+  add X22, X22, #1
+  udiv X5, X22, X24
+  msub X22, X5, X24, X22
+  cmp X22, #0
   bne in0
-  add X3, X3, #1
+  add X22, X22, #1 // Doesn't matter
   b exit
+
 A0:
-  add X4, X4, #1
+  add X23, X23, #1
   b next
+
 R0:
   b next
+
+print_progress:
+  stp FP, LR, [SP,#-16]!
+  mov FP, SP
+
+  sub SP, SP, #48 // 16 bit aligned?
+
+  adrp X0, format@PAGE
+  add X0, X0, format@PAGEOFF
+  mov X1, FP
+  str X19, [X1, #-48]
+  str X20, [X1, #-40]
+  str X21, [X1, #-32]
+  str X22, [X1, #-24]
+  str X23, [X1, #-16]
+  bl  _printf
+
+  mov SP, FP
+  ldp FP, LR, [SP], #16
+  ret
+
 exit:
-  mov     X0, X4      // Use cnt as status code return code
-  mov     X16, #1     // Service command code 1 terminates this program
-  svc     0           // Call MacOS to terminate the program
+  mov X0, X23      // Use cnt as status code return code
+  mov X16, #1     // Service command code 1 terminates this program
+  svc 0           // Call MacOS to terminate the program
+  // Never reached?
+  mov SP, FP
+  ldp FP, LR, [SP], #16
+  ret
   """)
   for rulename, rulelist in rules.items():
     for i, rule in enumerate(rulelist):
       out.append(f"{rulename}{i}:{rule.asm()}")
   out.append(""".data
-  format: .ascii "x: %Ld m: %Ld a: %Ld s: %Ld acc: %Ld\n"
+  format: .ascii "x: %lld m: %lld a: %lld s: %lld acc: %lld
+\"
+  last_printed_val: .double 0
 """)
   return out
 

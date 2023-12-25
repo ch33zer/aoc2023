@@ -14,8 +14,9 @@ class Part:
   def __repr__(self):
     return f"{{{self.x=} {self.m=} {self.a=} {self.s=}}}"
 
+INCLUSIVE_MAX = 1000 # 4000
 class PnRange:
-  def __init__(self, x=(1, 4000), m=(1, 4000), a=(1, 4000), s=(1, 4000)):
+  def __init__(self, x=(1, INCLUSIVE_MAX), m=(1, INCLUSIVE_MAX), a=(1, INCLUSIVE_MAX), s=(1, INCLUSIVE_MAX)):
     self.x = x
     self.m = m
     self.a = a
@@ -103,21 +104,16 @@ def main(lines):
       parts.append(part)
   s = 0
   for part in parts:
-    print(part)
     ruleset = "in"
     while ruleset != "A" and ruleset != "R":
-      print(f" {ruleset=} {rules[ruleset]}")
       for rule in rules[ruleset]:
-        print(f"  {rule=}")
         res = rule.eval(part)
-        print(f"   {res=}")
         if res:
           ruleset = res
           break
         else:
           continue
     if ruleset == "A":
-      print("Accept", part)
       s += part.val()
   return s
 
