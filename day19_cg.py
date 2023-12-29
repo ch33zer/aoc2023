@@ -81,7 +81,7 @@ _start:
   mov X21, #1
   mov X22, #1
   mov X23, #0 // Valid accumulator
-  mov X24, #4001 // TODO -> 4001
+  mov X24, #4001 // Max part number (exclusive)
   mov X25, #0 // Invalid accumulator
   mov X26, #-1 // ID
 next:
