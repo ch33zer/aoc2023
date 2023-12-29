@@ -14,7 +14,7 @@ class Part:
   def __repr__(self):
     return f"{{{self.x=} {self.m=} {self.a=} {self.s=}}}"
 
-INCLUSIVE_MAX = 1000 # 4000
+INCLUSIVE_MAX = 4000
 class PnRange:
   def __init__(self, x=(1, INCLUSIVE_MAX), m=(1, INCLUSIVE_MAX), a=(1, INCLUSIVE_MAX), s=(1, INCLUSIVE_MAX)):
     self.x = x

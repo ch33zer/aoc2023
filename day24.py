@@ -4,6 +4,8 @@ import sys
 import math
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+import torch
+from sympy import solve
 
 REGION_MIN = 200000000000000
 REGION_MAX = 400000000000000
@@ -77,6 +79,34 @@ def draw(particles):
 
   plt.show()
 
+def p(lhs, rhs):
+  print("\n".join(str(el) for el in lhs))
+  print("\n".join(str(el) for el in rhs))
+  variables = ["PS"] + [f"t{idx}" for idx in range(1000)]
+  for l, r in zip(lhs, rhs):
+    row = " + ".join(f"{coef}*{var}" for coef, var in zip(l, variables))
+    row += f"={r[0]}"
+    print(" ", row)
+
+import sympy
+import sympy.abc as abc
+def solve_dimension(particles, dimension):
+  NUM_PARTICLES = 3
+  total_vars = NUM_PARTICLES + 1
+  stone_positions = [abc.a, abc.d, abc.g]
+  stone_speeds = [abc.b, abc.e, abc.h]
+  time_vars = [abc.c, abc.f, abc.i]
+  eqns = []
+  for particle_index, (positions, speeds) in enumerate(particles[:NUM_PARTICLES]):
+    time_var = time_vars[particle_index]
+    for dimension in [0,1,2]:
+      position = positions[dimension]
+      speed = speeds[dimension]
+      stone_position = stone_positions[dimension]
+      stone_speed = stone_speeds[dimension]
+      eqns.append(-stone_position - stone_speed * time_var + position + speed * time_var)
+  sln = sympy.solve(eqns, stone_positions + stone_speeds + time_vars, dict=True, warn=True)
+  return sum(sln[0][var] for var in stone_positions)
 def main2(lines):
   s = 0
   particles = []
@@ -85,19 +115,9 @@ def main2(lines):
     x, y, z = map(int, pos.split(","))
     xvel, yvel, zvel = map(int, vel.split(","))
     particles.append(((x,y,z), (xvel,yvel,zvel)))
-  draw(particles)
-  mid = ((REGION_MAX-REGION_MIN)//2) + REGION_MIN
-  stone = ((mid,mid,mid), (1,1,1))
-  (xs,ys,zs),(vxs,vys,vzs) = stone
-  for first in particles[:3]:
-    for second in particles[:3]:
-      for third in particles[:3]:
-        if first == second or second == third or first == third:
-          continue
-        (x1,y1,z1), (vx1,vy1,vz1) = first
-        (x2,y2,z2), (vx2,vy2,vz2) = second
-        (x3,y3,z3), (vx3,vy3,vz3) = third
-        sim((x1,vx1), (x2,vx2), (x3,vx3), (xs,vxs))
+  #draw(particles)
+  return solve_dimension(particles, 0)
+  
 
 
 def readlines(filename):
@@ -107,10 +127,10 @@ def readlines(filename):
 
 example_filename = "day24.test"
 ex = readlines(example_filename)
-#print("Ex pt1", main(ex))
-#print("Ex pt2", main2(ex))
+print("Ex pt1", main(ex))
+print("Ex pt2", main2(ex))
 #sys.exit(1)
 main_filename = "day24.input"
 m = readlines(main_filename)
-#print("Main pt1", main(m))
+print("Main pt1", main(m))
 print("Main pt2", main2(m))

@@ -74,13 +74,18 @@ _start:
   stp FP, LR, [SP,#-16]!
   mov FP, SP
 
+  bl save_now
+
   mov X19, #0 // will get incremented below
   mov X20, #1
   mov X21, #1
   mov X22, #1
-  mov X23, #0
+  mov X23, #0 // Valid accumulator
+  mov X24, #4001 // TODO -> 4001
+  mov X25, #0 // Invalid accumulator
+  mov X26, #-1 // ID
 next:
-  mov X24, #1001
+  add X26, X26, #1
 x:
   add X19, X19, #1
   udiv X5, X19, X24
@@ -106,6 +111,7 @@ a:
 
   bl print_progress
 
+
 s:
   add X22, X22, #1
   udiv X5, X22, X24
@@ -120,23 +126,55 @@ A0:
   b next
 
 R0:
+  add X25, X25, #1
   b next
 
 print_progress:
   stp FP, LR, [SP,#-16]!
   mov FP, SP
 
-  sub SP, SP, #48 // 16 bit aligned?
+  sub SP, SP, #80 // 16 bit aligned?
+
+  bl save_now
+  sub X2, X0, X1
+
+  adrp X0, last_processed@PAGE
+  add X0, X0, last_processed@PAGEOFF
+  ldr X1, [X0]
+  str X26, [X0]
+  sub X3, X26, X1
+  udiv X4, X3, X2
 
   adrp X0, format@PAGE
   add X0, X0, format@PAGEOFF
-  mov X1, FP
-  str X19, [X1, #-48]
-  str X20, [X1, #-40]
-  str X21, [X1, #-32]
-  str X22, [X1, #-24]
-  str X23, [X1, #-16]
+  mov X1, SP
+  str X19, [X1]
+  str X20, [X1, #8]
+  str X21, [X1, #16]
+  str X22, [X1, #24]
+  str X23, [X1, #32]
+  str X25, [X1, #40]
+  str X2,  [X1, #48]
+  str X3,  [X1, #56]
+  str X4,  [X1, #64]
   bl  _printf
+
+  mov SP, FP
+  ldp FP, LR, [SP], #16
+  ret
+
+save_now:
+  stp FP, LR, [SP,#-16]!
+  mov FP, SP
+
+  mov X0, #0
+  bl _time
+  adrp X1, last_print_time@PAGE
+  add X1, X1, last_print_time@PAGEOFF
+  ldr X2, [X1]
+  str X0, [X1]
+
+  mov X1, X2
 
   mov SP, FP
   ldp FP, LR, [SP], #16
@@ -155,9 +193,9 @@ exit:
     for i, rule in enumerate(rulelist):
       out.append(f"{rulename}{i}:{rule.asm()}")
   out.append(""".data
-  format: .ascii "x: %lld m: %lld a: %lld s: %lld acc: %lld
-\"
-  last_printed_val: .double 0
+  format: .asciz "\n\n\n\n\n\033[5Ax: %lld m: %lld a: %lld s: %lld\nvalid: %lld invalid: %lld\ntime %lld seconds elapsed\n%lld processed since last\n%lld combinations/sec\n\033[5A"
+  last_print_time: .quad 0
+  last_processed: .quad 0
 """)
   return out
 
