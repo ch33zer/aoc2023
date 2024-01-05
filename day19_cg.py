@@ -76,49 +76,40 @@ _start:
 
   bl save_now
 
-  mov X19, #0 // will get incremented below
-  mov X20, #1
-  mov X21, #1
-  mov X22, #1
   mov X23, #0 // Valid accumulator
   mov X24, #4001 // Max part number (exclusive)
   mov X25, #0 // Invalid accumulator
-  mov X26, #-1 // ID
+  mov X26, #0 // ID
+
+  mov X22, #1 // S
+s_loop:
+  mov X21, #1 // A
+a_loop:
+  mov X20, #1 // M
+m_loop:
+  mov X19, #1 // X
+x_loop:
+  b in0
 next:
   add X26, X26, #1
-x:
-  add X19, X19, #1
-  udiv X5, X19, X24
-  msub X19, X5, X24, X19
-  cmp X19, #0
-  bne in0
-  add X19, X19, #1
-m:
-  add X20, X20, #1
-  udiv X5, X20, X24
-  msub X20, X5, X24, X20
-  cmp X20, #0
-  bne in0
-  add X20, X20, #1
 
-a:
-  add X21, X21, #1
-  udiv X5, X21, X24
-  msub X21, X5, X24, X21
-  cmp X21, #0
-  bne in0
-  add X21, X21, #1
+  add X19, X19, #1
+  cmp x19, x24
+  blt x_loop
 
+  add x20, x20, #1
+  cmp x20, x24
+  blt m_loop
+
+  add x21, x21, #1
+  cmp x21, x24
+  blt a_loop
+
+  add x22, x22, #1
   bl print_progress
+  cmp x22, x24
+  blt s_loop
 
-
-s:
-  add X22, X22, #1
-  udiv X5, X22, X24
-  msub X22, X5, X24, X22
-  cmp X22, #0
-  bne in0
-  add X22, X22, #1 // Doesn't matter
   b exit
 
 A0:
@@ -181,7 +172,7 @@ save_now:
   ret
 
 exit:
-  mov X0, X23      // Use cnt as status code return code
+  mov X0, X23      // Use cnt as status code
   mov X16, #1     // Service command code 1 terminates this program
   svc 0           // Call MacOS to terminate the program
   // Never reached?
